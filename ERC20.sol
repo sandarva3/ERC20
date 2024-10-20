@@ -6,7 +6,7 @@ interface Token{
     function allowance(address _owner, address _spender) external view returns(uint256); //To view how much token of owner is allowed for spender to use.
 
     function transfer(address _receiver, uint256 amount) external returns(bool);
-    function approve(address _receiver, uint256 _amount) external returns(bool);
+    function approve(address delegate, uint256 _amount) external returns(bool);
     function transferFrom(address _sender, uint256 _amount, address _receiver) external returns(bool);
 
 
@@ -44,4 +44,46 @@ contract myToken is Token{
         return balanceOf_[account];
     }
 
+    function transfer(address receiver, uint256 amount) public override returns(bool){
+        require(amount <= balanceOf_[msg.sender]);
+        balanceOf_[msg.sender] = balanceOf_[msg.sender].sub(amount);
+        balanceOf_[receiver] = balanceOf_[receiver].add(amount);
+        emit Transfer(msg.sender, amount, receiver);
+        return true;
+    }
+
+    function approve(address delegate, uint256 amount) public override{
+        allowed_[msg.sender][delegate] = amount;
+        emit Approve(msg.sender, amount, delegate);
+    }
+
+    function allowance(address owner, address spender) public override view returns(uint256){
+        return allowed_[owner][spender];
+    }
+
+    function transferFrom(address sender, uint256 amount, uint256 receiver) public override returns(bool){
+        require(msg.sender == receiver);
+        require(balanceOf_[sender] >= amount);
+        require(amount <= allowance(sender, receiver));
+
+        balanceOf_[sender] = balanceOf_[sender].sub(amount);
+        allowed_[sender][msg.sender] = allowed_[sender][msg.sender].sub(amount);
+        balanceOf_[receiver] = balanceOf_[receiver].add(amount);
+        
+        emit Transfer(sender, amount, receiver);
+        return true;
+    }
+}
+
+library SafeMath { //No ether transfer by library
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+      assert(b <= a);
+      return a - b;
+    }
+
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+      uint256 c = a + b;
+      assert(c >= a);
+      return c;
+    }
 }
